@@ -23,6 +23,12 @@ Este projeto consiste em dois componentes:
 - Error recovery automático
 - Sem memory leaks
 
+### ⌨️ Interatividade
+- **Comandos em tempo real** no servidor
+- **Controle de aplicações** (abrir Edge, Chrome, etc.)
+- **Threading assíncrono** para comandos não-bloqueantes
+- **Multi-plataforma** (Windows, Linux, macOS)
+
 ### 📈 Métricas Coletadas
 - **CPU**: Média de uso de todos os cores (%)
 - **Memory**: Memória RAM usada (KB → MB/GB)
@@ -94,14 +100,41 @@ O servidor exibirá:
 
 ```
 🚀 Servidor de Telemetria iniciado
-📡 Ouvindo em: 127.0.0.1:8080
+📡 Ouvindo em: 0.0.0.0:8080
 ==================================================
+⌨️  COMANDOS INTERATIVOS:
+  E - Abrir Microsoft Edge
+  H - Mostrar ajuda
+  Q - Sair
+==================================================
+⏹️  Aguardando conexões...
+
 ✅ SUCCESS: Cliente conectado: 127.0.0.1:xxxxx
+
 📊 TELEMETRIA EM TEMPO REAL
+🔗 Cliente: 127.0.0.1:xxxxx
 ==================================================
 🖥️  CPU: 45.2%
 💾 Memória: 8.34 GB
 ==================================================
+⏹️  Pressione Ctrl+C para sair
+```
+
+#### 4. Use Comandos Interativos
+
+Enquanto o servidor estiver rodando, você pode digitar comandos:
+
+```bash
+E          # Abre o Microsoft Edge
+H          # Mostra ajuda
+Q          # Encerra o servidor
+```
+
+**Exemplo de execução:**
+```
+E
+ℹ️ INFO: Abrindo Microsoft Edge...
+✅ SUCCESS: Microsoft Edge aberto com sucesso!
 ```
 
 ## 🔧 Desenvolvimento

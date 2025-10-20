@@ -91,21 +91,47 @@ TelemetryServer
 └── methods:
     ├── new() -> Result<Self>
     ├── run() -> Result<()>
-    └── accept_connection() -> Result<()>
+    ├── start_command_handler() [thread]
+    ├── accept_connection() -> Result<()>
+    └── print_startup_message()
+
+ServerCommand (enum)
+├── OpenEdge
+├── Help
+└── Quit
+    └── methods:
+        ├── from_input(&str) -> Option<Self>
+        ├── execute() -> Result<()>
+        ├── open_edge() -> Result<()>
+        └── show_help()
 
 ClientConnection
-├── socket: TcpStream
+├── reader: BufReader<TcpStream>
 ├── addr: SocketAddr
-├── buffer: [u8; 1024]
+├── line_buffer: String
 └── methods:
     ├── new(socket, addr) -> Self
     ├── handle_client() -> Result<()>
-    ├── read_telemetry_data() -> Result<Option<String>>
-    ├── process_telemetry_data(data)
-    ├── parse_telemetry(&str) -> Result<TelemetryData>
+    ├── read_telemetry_data() -> Result<Option<HashMap>>
     ├── display_telemetry(&HashMap)
-    └── format_and_print_metric(&str, f32)
+    ├── format_and_print_metric(&str, f32)
+    └── clear_screen()
+
+LogLevel (enum)
+├── Info
+├── Warning
+├── Error
+└── Success
 ```
+
+### Arquitetura de Threading
+
+O servidor utiliza duas threads principais:
+
+1. **Main Thread**: Aceita conexões TCP e processa telemetria
+2. **Command Handler Thread**: Processa comandos do usuário em paralelo
+
+Isso permite que você execute comandos enquanto o servidor está processando dados de telemetria sem bloqueios.
 
 ## 🚀 Como Usar
 
@@ -116,9 +142,50 @@ cargo build --release
 # Executar
 cargo run
 
-# O servidor ficará ouvindo em 127.0.0.1:8080
-# Para conexões externas, altere DEFAULT_ADDRESS para "0.0.0.0:8080"
+# O servidor ficará ouvindo em 0.0.0.0:8080
+# Para conexões locais apenas, altere DEFAULT_ADDRESS para "127.0.0.1:8080"
 ```
+
+## ⌨️ Comandos Interativos
+
+O servidor agora suporta comandos interativos durante a execução:
+
+| Comando | Descrição |
+|---------|-----------|
+| **E** | Abre o Microsoft Edge |
+| **H** ou **HELP** | Mostra menu de ajuda |
+| **Q** ou **QUIT** | Encerra o servidor |
+
+### Como Usar Comandos
+
+Enquanto o servidor estiver rodando:
+1. Digite o comando no terminal
+2. Pressione Enter
+3. O comando será executado imediatamente
+
+**Exemplo:**
+```bash
+🚀 Servidor de Telemetria iniciado
+📡 Ouvindo em: 0.0.0.0:8080
+==================================================
+⌨️  COMANDOS INTERATIVOS:
+  E - Abrir Microsoft Edge
+  H - Mostrar ajuda
+  Q - Sair
+==================================================
+⏹️  Aguardando conexões...
+
+E  ← Digite 'E' e pressione Enter
+ℹ️ INFO: Abrindo Microsoft Edge...
+✅ SUCCESS: Microsoft Edge aberto com sucesso!
+```
+
+### Compatibilidade de Plataforma
+
+O comando `E` (Abrir Edge) funciona em:
+- ✅ **Windows**: Usa `cmd /C start msedge`
+- ✅ **Linux**: Usa `microsoft-edge`
+- ✅ **macOS**: Usa `open -a "Microsoft Edge"`
 
 ## 🔧 Configuração
 

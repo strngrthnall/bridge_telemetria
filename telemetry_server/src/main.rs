@@ -1,13 +1,15 @@
 use std::{
     collections::HashMap,
-    io::{self, BufRead, BufReader, Result as IoResult},
+    io::{self, BufRead, BufReader, Result as IoResult, stdin},
     net::{SocketAddr, TcpListener, TcpStream},
     fmt,
+    thread,
+    process::Command,
 };
 
 // LocalHost IP for Tests
-// const DEFAULT_ADDRESS: &str = "127.0.0.1:8080";
-const DEFAULT_ADDRESS: &str = "0.0.0.0:8080";
+const DEFAULT_ADDRESS: &str = "127.0.0.1:8080";
+// const DEFAULT_ADDRESS: &str = "0.0.0.0:8080";
 const BUFFER_SIZE: usize = 4096;
 
 type TelemetryResult<T> = IoResult<T>;
@@ -40,6 +42,80 @@ fn log(level: LogLevel, message: &str) {
     }
 }
 
+/// Comandos interativos disponíveis no servidor
+#[derive(Debug, Clone, Copy)]
+enum ServerCommand {
+    OpenEdge,
+    Help,
+    Quit,
+}
+
+impl ServerCommand {
+    /// Tenta parsear uma string para um comando
+    fn from_input(input: &str) -> Option<Self> {
+        match input.trim().to_uppercase().as_str() {
+            "E" => Some(ServerCommand::OpenEdge),
+            "H" | "HELP" => Some(ServerCommand::Help),
+            "Q" | "QUIT" | "EXIT" => Some(ServerCommand::Quit),
+            _ => None,
+        }
+    }
+
+    /// Executa o comando
+    fn execute(&self) -> IoResult<()> {
+        match self {
+            ServerCommand::OpenEdge => Self::open_edge(),
+            ServerCommand::Help => {
+                Self::show_help();
+                Ok(())
+            }
+            ServerCommand::Quit => {
+                log(LogLevel::Info, "Encerrando servidor...");
+                std::process::exit(0);
+            }
+        }
+    }
+
+    /// Abre o navegador Microsoft Edge
+    fn open_edge() -> IoResult<()> {
+        log(LogLevel::Info, "Abrindo Microsoft Edge...");
+        
+        #[cfg(target_os = "windows")]
+        {
+            Command::new("cmd")
+                .args(&["/C", "start", "msedge"])
+                .spawn()?;
+        }
+        
+        #[cfg(target_os = "linux")]
+        {
+            Command::new("microsoft-edge")
+                .spawn()?;
+        }
+        
+        #[cfg(target_os = "macos")]
+        {
+            Command::new("open")
+                .args(&["-a", "Microsoft Edge"])
+                .spawn()?;
+        }
+        
+        log(LogLevel::Success, "Microsoft Edge aberto com sucesso!");
+        Ok(())
+    }
+
+    /// Mostra menu de ajuda com comandos disponíveis
+    fn show_help() {
+        println!("\n{}", "=".repeat(50));
+        println!("📋 COMANDOS DISPONÍVEIS");
+        println!("{}", "=".repeat(50));
+        println!("E        - Abrir Microsoft Edge");
+        println!("H, HELP  - Mostrar esta ajuda");
+        println!("Q, QUIT  - Encerrar servidor");
+        println!("{}", "=".repeat(50));
+    }
+}
+
 fn main() -> TelemetryResult<()> {
     let server = TelemetryServer::new(DEFAULT_ADDRESS)?;
     server.run()
@@ -63,6 +139,9 @@ impl TelemetryServer {
     fn run(&self) -> TelemetryResult<()> {
         self.print_startup_message();
         
+        // Inicia thread para processar comandos do usuário
+        Self::start_command_handler();
+        
         loop {
             match self.accept_connection() {
                 Ok(_) => {
@@ -76,11 +155,38 @@ impl TelemetryServer {
         }
     }
 
+    fn start_command_handler() {
+        thread::spawn(|| {
+            let stdin = stdin();
+            let mut input = String::new();
+            
+            loop {
+                input.clear();
+                
+                // Lê entrada do usuário
+                if let Ok(_) = stdin.read_line(&mut input) {
+                    if let Some(command) = ServerCommand::from_input(&input) {
+                        if let Err(e) = command.execute() {
+                            log(LogLevel::Error, &format!("Erro ao executar comando: {}", e));
+                        }
+                    } else if !input.trim().is_empty() {
+                        log(LogLevel::Warning, "Comando não reconhecido. Digite 'H' para ajuda.");
+                    }
+                }
+            }
+        });
+    }
+
     fn print_startup_message(&self) {
         println!("🚀 Servidor de Telemetria iniciado");
         println!("📡 Ouvindo em: {}", self.address);
-        println!("⏹️  Pressione Ctrl+C para parar o servidor");
         println!("{}", "=".repeat(50));
+        println!("⌨️  COMANDOS INTERATIVOS:");
+        println!("  E - Abrir Microsoft Edge");
+        println!("  H - Mostrar ajuda");
+        println!("  Q - Sair");
+        println!("{}", "=".repeat(50));
+        println!("⏹️  Aguardando conexões...\n");
     }
 
     fn accept_connection(&self) -> TelemetryResult<()> {

@@ -8,8 +8,8 @@ use std::{
 use sysinfo::System;
 
 // LocalHost IP for Tests
-//const SERVER_ADDRESS: &str = "127.0.0.1:8080";
-const SERVER_ADDRESS: &str = "<Server IP Here>:8080";
+const SERVER_ADDRESS: &str = "127.0.0.1:8080";
+//const SERVER_ADDRESS: &str = "<Server IP Here>:8080";
 const TELEMETRY_INTERVAL_MS: u64 = 1000;
 const JSON_BUFFER_CAPACITY: usize = 256;
 
