@@ -5,7 +5,9 @@ use std::{
     fmt,
 };
 
-const DEFAULT_ADDRESS: &str = "127.0.0.1:8080";
+// LocalHost IP for Tests
+// const DEFAULT_ADDRESS: &str = "127.0.0.1:8080";
+const DEFAULT_ADDRESS: &str = "0.0.0.0:8080";
 const BUFFER_SIZE: usize = 4096;
 
 type TelemetryResult<T> = IoResult<T>;
